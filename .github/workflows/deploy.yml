@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # Ermöglicht manuellen Start aus der GitHub-Oberfläche
 
 jobs:
   ftp-deploy:
