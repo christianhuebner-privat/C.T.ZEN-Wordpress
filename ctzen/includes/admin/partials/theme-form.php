@@ -7,7 +7,7 @@
       <input type="hidden" name="id" value="<?php echo intval($theme->id); ?>">
     <?php endif; ?>
     <table class="form-table">
-      <!-- Titel, Parent, Reihenfolge, Datum -->
+      <!-- Titel, Parent, Reihenfolge, Start/Enddatum -->
       <tr>
         <th><label for="title">Titel</label></th>
         <td><input type="text" name="title" id="title" class="regular-text" required value="<?php echo esc_attr($theme->title ?? ''); ?>"></td>
@@ -50,9 +50,7 @@
                 $name = $user ? $user->display_name : 'User#'.$v->author_id;
                 $content = $wpdb->get_var($wpdb->prepare("SELECT description FROM {$wpdb->prefix}ctzen_desc_versions WHERE vid=%d", $v->vid));
               ?>
-              <option value="<?php echo esc_attr($v->vid); ?>" data-description="<?php echo esc_attr($content); ?>">
-                <?php echo esc_html(date('Y-m-d H:i', strtotime($v->created_at))).' – '.esc_html($name); ?>
-              </option>
+              <option value="<?php echo esc_attr($v->vid); ?>" data-description="<?php echo esc_attr($content); ?>"><?php echo esc_html(date('Y-m-d H:i', strtotime($v->created_at))).' – '.esc_html($name); ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -74,9 +72,7 @@
                 $name = $user ? $user->display_name : 'User#'.$v->author_id;
                 $content = $wpdb->get_var($wpdb->prepare("SELECT opinion FROM {$wpdb->prefix}ctzen_opinion_versions WHERE vid=%d", $v->vid));
               ?>
-              <option value="<?php echo esc_attr($v->vid); ?>" data-opinion="<?php echo esc_attr($content); ?>">
-                <?php echo esc_html(date('Y-m-d H:i', strtotime($v->created_at))).' – '.esc_html($name); ?>
-              </option>
+              <option value="<?php echo esc_attr($v->vid); ?>" data-opinion="<?php echo esc_attr($content); ?>"><?php echo esc_html(date('Y-m-d H:i', strtotime($v->created_at))).' – '.esc_html($name); ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -96,7 +92,21 @@
             </div>
             <?php endforeach; ?>
           </div>
-          <p><button type="button" id="ctz-add-news" class="button">News hinzufügen</button></p>
+          <button type="button" id="ctz-add-news" class="button">News hinzufügen</button>
+          <?php if ($theme): ?>
+          <div class="ctz-version-dropdown" style="margin-top:10px;">
+            <label for="akt-versions">Version wählen:</label>
+            <select id="akt-versions">
+              <?php foreach ($akt_versions as $v):
+                $user = get_userdata($v->author_id);
+                $name = $user ? $user->display_name : 'User#'.$v->author_id;
+                $raw = $wpdb->get_var($wpdb->prepare("SELECT data FROM {$wpdb->prefix}ctzen_aktuelles_versions WHERE vid=%d", $v->vid));
+              ?>
+              <option value="<?php echo esc_attr($v->vid); ?>" data-aktuelles="<?php echo esc_attr($raw); ?>"><?php echo esc_html(date('Y-m-d H:i', strtotime($v->created_at))).' – '.esc_html($name); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <?php endif; ?>
         </td>
       </tr>
     </table>
@@ -106,37 +116,38 @@
 
 <script>
 jQuery(function($) {
-  // Clear field buttons for description and opinion
-  $('.ctz-clear-field').on('click', function() {
-    var target = $(this).data('target');
-    $(target).val('');
-  });
-
+  // Clear field
+  $('.ctz-clear-field').click(function(){ $($(this).data('target')).val(''); });
   // News add/remove
   var container = $('#aktuelles-container');
-  $('#ctz-add-news').on('click', function(e) {
+  $('#ctz-add-news').click(function(e){
     e.preventDefault();
     var idx = container.children('.ctz-news-row').length;
-    var row = '<div class="ctz-news-row">'
-            + '<input type="date" name="news['+idx+'][date]" class="ctz-news-date-field" />'
-            + '<textarea name="news['+idx+'][content]" class="large-text" rows="3"></textarea>'
-            + '<button type="button" class="button ctz-remove-news">Entfernen</button>'
-            + '</div>';
-    container.append(row);
+    container.append(
+      '<div class="ctz-news-row">'
+      + '<input type="date" name="news['+idx+'][date]" class="ctz-news-date-field" />'
+      + '<textarea name="news['+idx+'][content]" class="large-text" rows="3"></textarea>'
+      + '<button type="button" class="button ctz-remove-news">Entfernen</button>'
+      + '</div>'
+    );
   });
-  container.on('click', '.ctz-remove-news', function(e) {
-    e.preventDefault();
-    $(this).closest('.ctz-news-row').remove();
-  });
-
+  container.on('click','.ctz-remove-news',function(e){ e.preventDefault(); $(this).closest('.ctz-news-row').remove(); });
   // Version dropdowns
-  $('#desc-versions').on('change', function() {
-    var val = $(this).find(':selected').data('description') || '';
-    $('#description').val(val);
-  }).trigger('change');
-  $('#op-versions').on('change', function() {
-    var val = $(this).find(':selected').data('opinion') || '';
-    $('#opinion').val(val);
+  $('#desc-versions').change(function(){ var val=$(this).find(':selected').data('description')||''; $('#description').val(val); }).trigger('change');
+  $('#op-versions').change(function(){ var val=$(this).find(':selected').data('opinion')||''; $('#opinion').val(val); }).trigger('change');
+  $('#akt-versions').change(function(){
+    var raw = $(this).find(':selected').attr('data-aktuelles')||'[]';
+    var list = JSON.parse(raw);
+    container.empty();
+    list.forEach(function(item,i){
+      container.append(
+        '<div class="ctz-news-row">'
+        + '<input type="date" name="news['+i+'][date]" class="ctz-news-date-field" value="'+item.date+'" />'
+        + '<textarea name="news['+i+'][content]" class="large-text" rows="3">'+item.content+'</textarea>'
+        + '<button type="button" class="button ctz-remove-news">Entfernen</button>'
+        + '</div>'
+      );
+    });
   }).trigger('change');
 });
 </script>
