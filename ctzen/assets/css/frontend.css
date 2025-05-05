@@ -1,0 +1,6 @@
+.ctz-theme-list { list-style:none; padding:0; }
+.ctz-theme-list li { display:inline-block; margin-right:10px; }
+.ctz-theme-list li.active a { font-weight:bold; }
+.ctz-content { margin-top:20px; }
+.ctz-news-item { border-top:1px solid #ddd; padding:10px 0; }
+.ctz-news-date { font-size:0.9em; color:#555; }
