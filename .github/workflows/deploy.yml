@@ -20,4 +20,3 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         server-dir: /plugin.ctzen.de/wp-content/plugins/
-        local-dir: ./
